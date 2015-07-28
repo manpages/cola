@@ -15,7 +15,7 @@
     "url": "https://github.com/manpages/cola.git"
   },
   "author": "Jonn Mostovoy",
-  "license": "BSD",
+  "license": "GPLv3",
   "bugs": {
     "url": "https://github.com/manpages/cola/issues"
   },
