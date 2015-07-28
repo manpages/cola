@@ -1,7 +1,10 @@
+
+[ -d "node_modules/" ] || time npm install --verbose
+
 cd cola
 
-../cordova platform add android
+../node_modules/cordova/bin/cordova platform add android
 
-../cordova plugin add cordova-plugin-geolocation
+../node_modules/cordova/bin/cordova plugin add cordova-plugin-geolocation
 
 cd ..
