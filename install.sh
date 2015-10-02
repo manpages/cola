@@ -1,1 +1,1 @@
-adb install code/platforms/android/build/outputs/apk/android-debug.apk
+adb install ./cola/platforms/android/build/outputs/apk/android-debug.apk
