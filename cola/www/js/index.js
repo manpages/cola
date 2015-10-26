@@ -47,14 +47,14 @@ function callSession(kind, payload, ok1, nok1) {
      function(x) {
        debug({ok: x})
        if (ok1)
-         ok1()
+         ok1(x)
        else
          debug('callSession: success callback not provided')
      },
      function(x) {
        debug({wellFuck: x})
        if (nok1)
-         nok1()
+         nok1(x)
      })
 }
 
@@ -223,7 +223,23 @@ var setupLoginButton = function() {
     debug('Login failure')
     byClass('login__mainMenu--error').innerText = "Incorrect credentials"
   }
-  byId("login").onclick = function () { callSession('login', getToken(), ok1, nok1); }
+  byId("login").onclick = function () { callSession('login', null, ok1, nok1); }
+}
+
+var setupPanicButton = function() {
+  var ok1 = function(x) {
+    debug("Distress signal was accepted:")
+    debug(x)
+  }
+  var nok1 = function(x) {
+    debug("Distress signal was denied:")
+    debug(x)
+  }
+  byClass("app__mainMenu--button").onclick = function() {
+    debug("Sending distress signal:")
+    debug(gPosition)
+    callSession('call', {position: gPosition}, ok1, nok1)
+  }
 }
 
 var app = {
@@ -242,6 +258,8 @@ var app = {
     },
 
     onDeviceReady: function() {
+        setupLoginButton()
+        setupPanicButton()
         app.receivedEvent('deviceready')
         req('', 'http://memorici.de:10081', 'GET', function(x) {debug({testRequestSuccess: x})},
                                                    function(x) {debug({testRequestFailure: x})})
@@ -255,7 +273,6 @@ var app = {
         setUsername(localStorage.getItem('username'))
         setToken(localStorage.getItem('token'))
         if (!getToken()) {
-          setupLoginButton()
           showLogin()
         } else {
           showApp()

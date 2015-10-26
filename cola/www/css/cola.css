@@ -3,7 +3,22 @@
 }
 
 .app__debug--view {
-  max-height: 100px;
-  max-width: 103%;
+  font-size: 10px;
+  max-height: 400px;
+  max-width: 100%;
   overflow: auto;
+}
+
+.app__hedaer--header {
+  height:20vh;
+}
+
+.app__mainMenu--view {
+  height: 80vh;
+  width: 100vw;
+}
+
+.app__mainMenu--button {
+  height: 100%;
+  width: 100%;
 }
