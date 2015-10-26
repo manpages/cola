@@ -1,0 +1,9 @@
+.hidden {
+  display: none;
+}
+
+.app__debug--view {
+  max-height: 100px;
+  max-width: 103%;
+  overflow: auto;
+}

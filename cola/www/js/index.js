@@ -1,8 +1,194 @@
 var gPosition
 var gGPSLoop
+var gDebugLoop
+var gToken
+var gDeviceId
+var gDebug = true
+
+/* * * * * UTILS * * * * */
+
+function ok(x) { return {ok: x}; }
+function nok(x) { return {nok: x}; }
+
+function randomString(length) {
+    return Math.round(
+      (Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))
+    ).toString(36).slice(1);
+}
+
+function getEndpoint(x) {
+  return 'http://memorici.de:10081/dumb'
+}
+
+function loginMaybe(username, password) {
+  return 'token666'
+}
+
+function callSession(kind, payload) {
+  var token = getToken() // basically a Reader monad Kappa
+  var deviceId = getDeviceId()
+  debug({callSession: {kind: kind, token: token, deviceId: deviceId}})
+  var username  = byId('username') ? byId('username').value : null
+  var password  = byId('password') ? byId('password').value : null
+  if (!token) {
+    token = loginMaybe(username, password)
+    if (!token)
+      return {nok: "Incorrect credentials."}
+  }
+  var script    = getEndpoint(kind)
+  var dReq      = dumbRPCReq
+  dReq(toString({action: kind, token: token, deviceId: deviceId, payload: payload}),
+     script, 
+     'POST',
+     function(x) {
+       debug({ok: x})
+     },
+     function(x) {
+       debug({wellFuck: x})
+     })
+}
+
+// Wrapper that adds DumbRPC semantics to req function
+function dumbRPCReq(what, where, how, ok, nok, headers) {
+  var okPrim = function(r) {
+    var resultMaybe = JSON.parse(r.responseText)
+    if (resultMaybe.error)
+      return nok(resultMaybe.error)
+    if (resultMaybe.result && resultMaybe.token)
+      return ok({result: resultMaybe.result, token: resultMaybe.token})
+    return nok('Server does not implement DumbRPC correctly')
+  }
+  return req(what, where, how, okPrim, nok, headers)
+}
+
+// generic request function with a nice API
+// void req(
+//        Object,
+//        URL,
+//        "POST" | "GET" | "PUT" ...,
+//        (req -> void),
+//        (req -> void),
+//        [{HttpHeader: Value}])
+function req(what, where, how, ok, nok, headers) {
+  var r = new XMLHttpRequest()
+  debug({req: r})
+  r.open(how, where)
+  debug('Opened ' + how + ' request at ' + where)
+  if (headers) {
+    for (k in headers) {
+      r.setRequestHeader(k, headers[k])
+    }
+  }
+  r.onload = function() {
+    if (r.status === 200) {
+      ok(r)
+    } else {
+      nok(r.statusText)
+    }
+  }
+  r.onerror = function() {
+    debug('Network error')
+  }
+  r.send(what)
+  debug('Sent payload ``' + what + "''")
+}
+
+function byId(x) {return document.getElementById(x)}
+function byClass(x) {return document.getElementsByClassName(x)}
+
+function redirectFlat(qs) {
+  document.location = (document.location.origin + document.location.pathname + '?' + qs)
+}
+
+function toString (x) { return JSON.stringify(x) }
+
+function getMessages(){
+  
+  dumbRPCReq(toString({action: 'read'}), './msg.php', 'POST', 
+        function(x){
+          for(k in x){
+            var date = new Date((k-0)*1000) //to int and then ms
+            var title = 'On ' + dateToShortString(date) + ' ' + x[k].from + ' sent:';
+            var outerDiv = document.createElement('div')
+            var titleDiv = document.createElement('div')
+            var msgPre   = document.createElement('pre')
+            titleDiv.innerText = title
+            msgPre.innerText   = x[k].message
+            outerDiv.appendChild(titleDiv).appendChild(msgPre)
+            if (x[k].message) {
+              var recText = document.getElementById('recieved')
+              if(!recText.hasChildNodes())
+                recText.appendChild(outerDiv)
+              else
+                recText.insertBefore(outerDiv, recText.firstChild)
+            }
+          }         
+        },
+        function(x){
+          console.log({well_fuck: x})
+        })
+}
+
+function dateToShortString (x) {
+  return (x.getMonth() + 1) + '/' +
+         (x.getDate())      + '/' +
+         (x.getFullYear())
+}
+
+var debug = function(x) {
+  var jx
+  try {
+    jx = JSON.stringify(x)
+  } catch(e) {
+    jx = "Some circular data received, refusing to inspect"
+  }
+  if (gDebug) {
+    debugView().innerText += '\n>>= ' + Date.now() + ' =<<\n'
+    debugView().innerText += jx
+    debugView().scrollTop  = debugView().scrollHeight
+  }
+}
+
+/* * * * /UTILS * * * */
 
 var view = function() {
   return document.body.querySelector('.app__mainMenu--view')
+}
+
+var debugView = function() {
+  return document.body.querySelector('.app__debug--view')
+}
+
+var showLogin = function() {
+  document.body.querySelector('.call__mainMenu--view')  . setAttribute('style', 'display:none;')
+  document.body.querySelector('.app__mainMenu--view')   . setAttribute('style', 'display:none;')
+  document.body.querySelector('.login__mainMenu--view') . setAttribute('style', 'display:block;')
+}
+
+var showApp = function() {
+  document.body.querySelector('.call__mainMenu--view')  . setAttribute('style', 'display:none;')
+  document.body.querySelector('.app__mainMenu--view')   . setAttribute('style', 'display:block;')
+  document.body.querySelector('.login__mainMenu--view') . setAttribute('style', 'display:none;')
+}
+
+var showCall = function() {
+  document.body.querySelector('.call__mainMenu--view')  . setAttribute('style', 'display:block;')
+  document.body.querySelector('.app__mainMenu--view')   . setAttribute('style', 'display:none;')
+  document.body.querySelector('.login__mainMenu--view') . setAttribute('style', 'display:none;')
+}
+
+var setToken = function(x) {
+  return gToken = x
+}
+var getToken = function() {
+  return gToken
+}
+
+var setDeviceId = function(x) {
+  return gDeviceId = x
+}
+var getDeviceId = function() {
+  return gDeviceId
 }
 
 var positionToString = function(position) {
@@ -19,18 +205,25 @@ var positionToString = function(position) {
 var beamGPS = function() {
   navigator.geolocation.getCurrentPosition( function(x) {
                                               gPosition = x
-                                              view().innerText = positionToString(gPosition)
                                             }
-                                          , function() {} )
+                                          , function() {
+                                              debug('Failed GPS beam!')
+                                            } )
+}
+
+var setupLoginButton = function() {
+  byId("login").onclick = function () { debug(666); callSession('login', getToken()); }
 }
 
 var app = {
 
     initialize: function() {
+        debug('Initializing...')
         this.bindEvents()
         // We're working only in foreground to drain less battery
         // so we fetch GPS data pretty rigorously.
         gGPSLoop = window.setInterval(beamGPS, 666) 
+        gDebugLoop = window.setInterval(function() { debug ('<3') }, 10000)
     },
 
     bindEvents: function() {
@@ -39,6 +232,20 @@ var app = {
 
     onDeviceReady: function() {
         app.receivedEvent('deviceready')
+        req('', 'http://memorici.de:10081', 'GET', function(x) {debug({testRequestSuccess: x})},
+                                                   function(x) {debug({testRequestFailure: x})})
+        setDeviceId(localStorage.getItem('deviceId'))
+        if (!getDeviceId()) {
+          setDeviceId(randomString(56))
+          localStorage.setItem('deviceId', getDeviceId())
+        }
+        setToken(localStorage.getItem('token'))
+        if (!getToken()) {
+          setupLoginButton()
+          showLogin()
+        } else {
+          showApp()
+        }
     },
 
     receivedEvent: function(id) {
@@ -47,7 +254,6 @@ var app = {
         var receivedElement = parentElement.querySelector('.received')
 
         listeningElement.setAttribute('style', 'display:none;')
-        receivedElement.setAttribute('style', 'display:block;')
 
         console.log('Received Event: ' + id)
     }

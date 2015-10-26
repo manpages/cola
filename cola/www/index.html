@@ -8,26 +8,47 @@
             * Disables use of inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:
                 * Enable inline JS: add 'unsafe-inline' to default-src
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com http://memorici.de:10081 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *">
         <meta name="format-detection" content="telephone=no">
         <meta name="msapplication-tap-highlight" content="no">
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+        <link rel="stylesheet" type="text/css" href="css/cola.css" />
         <title>Koblenz Panic Button</title>
     </head>
     <body>
         <div class="app">
             <!-- If you want to localize the app at some point, use BEM selectors from JS ;)
                  there is no reason to even touch the structure of the page! -->
-            <h1 class="app__mainMenu--header">Koblenz Panic Button</h1>
+            <h1 class="app__mainMenu--header">Koblenz Panic Button v0.1</h1>
             <div id="deviceready" class="app__mainMenu--viewMaybe">
                 <p class="event listening app__mainMenu--loading">
-                  Connecting to Device
-                </p>
-                <p class="event received app__mainMenu--view">
-                  Connected
+                  Connecting to Device...
                 </p>
             </div>
         </div>
+        <div class="hidden login__mainMenu--view">
+          <form class="login__mainMenu--form">
+            <div>
+              <label>Agreement:</label>
+              <input class="login__form--username" id="username" name="login" type="text" />
+            </div>
+            <div>
+              <label>Password:</label>
+              <input class="login__form--password" id="password" name="password" type="password" />
+            </div>
+          </form>
+          <div>
+            <button class="login__form--login" id="login">Sign in</button>
+          </div>
+        </div>
+        <p class="hidden app__mainMenu--view">
+          WIP1
+        </p>
+        <div class="hidden call__mainMenu--view">
+          WIP2
+        </div>
+        <pre class="app__debug--view">
+        </pre>
         <script type="text/javascript" src="cordova.js"></script>
         <script type="text/javascript" src="js/index.js"></script>
     </body>
