@@ -26,7 +26,7 @@ function loginMaybe(username, password) {
   return 'token666'
 }
 
-function callSession(kind, payload) {
+function callSession(kind, payload, ok1, nok1) {
   var token = getToken() // basically a Reader monad Kappa
   var username  = getUsername()
   if (!username) {
@@ -46,9 +46,15 @@ function callSession(kind, payload) {
      'POST',
      function(x) {
        debug({ok: x})
+       if (ok1)
+         ok1()
+       else
+         debug('callSession: success callback not provided')
      },
      function(x) {
        debug({wellFuck: x})
+       if (nok1)
+         nok1()
      })
 }
 
@@ -98,7 +104,8 @@ function req(what, where, how, ok, nok, headers) {
 }
 
 function byId(x) {return document.getElementById(x)}
-function byClass(x) {return document.getElementsByClassName(x)}
+function manyByClass(x) {return document.getElementsByClassName(x)}
+function byClass(x) {return document.querySelector('.' + x)}
 
 function redirectFlat(qs) {
   document.location = (document.location.origin + document.location.pathname + '?' + qs)
@@ -208,7 +215,15 @@ var beamGPS = function() {
 }
 
 var setupLoginButton = function() {
-  byId("login").onclick = function () { debug(666); callSession('login', getToken()); }
+  var ok1 = function() {
+    debug('Login success')
+    showApp()
+  }
+  var nok1 = function() {
+    debug('Login failure')
+    byClass('login__mainMenu--error').innerText = "Incorrect credentials"
+  }
+  byId("login").onclick = function () { callSession('login', getToken(), ok1, nok1); }
 }
 
 var app = {
