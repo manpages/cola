@@ -3,6 +3,7 @@ var gGPSLoop
 var gDebugLoop
 var gToken
 var gDeviceId
+var gUsername
 var gDebug = true
 
 /* * * * * UTILS * * * * */
@@ -11,9 +12,10 @@ function ok(x) { return {ok: x}; }
 function nok(x) { return {nok: x}; }
 
 function randomString(length) {
-    return Math.round(
-      (Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))
-    ).toString(36).slice(1);
+  var chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var result = '';
+  for (var i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+  return result;
 }
 
 function getEndpoint(x) {
@@ -26,18 +28,20 @@ function loginMaybe(username, password) {
 
 function callSession(kind, payload) {
   var token = getToken() // basically a Reader monad Kappa
+  var username  = getUsername()
+  if (!username) {
+    username  = byId('username') ? byId('username').value : null
+  }
+  var password  = byId('password') ? byId('password').value : null
   var deviceId = getDeviceId()
   debug({callSession: {kind: kind, token: token, deviceId: deviceId}})
-  var username  = byId('username') ? byId('username').value : null
-  var password  = byId('password') ? byId('password').value : null
-  if (!token) {
-    token = loginMaybe(username, password)
-    if (!token)
-      return {nok: "Incorrect credentials."}
+  if (token) {
+    password = null
   }
   var script    = getEndpoint(kind)
   var dReq      = dumbRPCReq
-  dReq(toString({action: kind, token: token, deviceId: deviceId, payload: payload}),
+  dReq(toPaddedString({action: kind, token: token, deviceId: deviceId, payload: payload,
+                       username: username, password: password}),
      script, 
      'POST',
      function(x) {
@@ -51,7 +55,7 @@ function callSession(kind, payload) {
 // Wrapper that adds DumbRPC semantics to req function
 function dumbRPCReq(what, where, how, ok, nok, headers) {
   var okPrim = function(r) {
-    var resultMaybe = JSON.parse(r.responseText)
+    var resultMaybe = fromPaddedString(r.responseText)
     if (resultMaybe.error)
       return nok(resultMaybe.error)
     if (resultMaybe.result && resultMaybe.token)
@@ -102,31 +106,16 @@ function redirectFlat(qs) {
 
 function toString (x) { return JSON.stringify(x) }
 
-function getMessages(){
-  
-  dumbRPCReq(toString({action: 'read'}), './msg.php', 'POST', 
-        function(x){
-          for(k in x){
-            var date = new Date((k-0)*1000) //to int and then ms
-            var title = 'On ' + dateToShortString(date) + ' ' + x[k].from + ' sent:';
-            var outerDiv = document.createElement('div')
-            var titleDiv = document.createElement('div')
-            var msgPre   = document.createElement('pre')
-            titleDiv.innerText = title
-            msgPre.innerText   = x[k].message
-            outerDiv.appendChild(titleDiv).appendChild(msgPre)
-            if (x[k].message) {
-              var recText = document.getElementById('recieved')
-              if(!recText.hasChildNodes())
-                recText.appendChild(outerDiv)
-              else
-                recText.insertBefore(outerDiv, recText.firstChild)
-            }
-          }         
-        },
-        function(x){
-          console.log({well_fuck: x})
-        })
+function toPaddedString (x) { 
+  var jx = JSON.stringify(x)
+  var noiseN = 2000 - jx.length
+  var noise = randomString(noiseN)
+  debug({noiseN: noiseN, noise: noise})
+  return jx + noise
+}
+
+function fromPaddedString(x) {
+  return JSON.parse(x.substr(0, x.lastIndexOf('}') + 1))
 }
 
 function dateToShortString (x) {
@@ -175,6 +164,13 @@ var showCall = function() {
   document.body.querySelector('.call__mainMenu--view')  . setAttribute('style', 'display:block;')
   document.body.querySelector('.app__mainMenu--view')   . setAttribute('style', 'display:none;')
   document.body.querySelector('.login__mainMenu--view') . setAttribute('style', 'display:none;')
+}
+
+var setUsername = function(x) {
+  return gUsername = x
+}
+var getUsername = function() {
+  return gUsername
 }
 
 var setToken = function(x) {
@@ -234,11 +230,14 @@ var app = {
         app.receivedEvent('deviceready')
         req('', 'http://memorici.de:10081', 'GET', function(x) {debug({testRequestSuccess: x})},
                                                    function(x) {debug({testRequestFailure: x})})
+
         setDeviceId(localStorage.getItem('deviceId'))
         if (!getDeviceId()) {
           setDeviceId(randomString(56))
           localStorage.setItem('deviceId', getDeviceId())
         }
+
+        setUsername(localStorage.getItem('username'))
         setToken(localStorage.getItem('token'))
         if (!getToken()) {
           setupLoginButton()
