@@ -1,6 +1,5 @@
 var gPosition
 var gGPSLoop
-var gDebugLoop
 var gToken
 var gDeviceId
 var gUsername
@@ -215,8 +214,9 @@ var beamGPS = function() {
 }
 
 var setupLoginButton = function() {
-  var ok1 = function() {
+  var ok1 = function(x) {
     debug('Login success')
+    setToken(x.token)
     showApp()
   }
   var nok1 = function() {
@@ -250,7 +250,6 @@ var app = {
         // We're working only in foreground to drain less battery
         // so we fetch GPS data pretty rigorously.
         gGPSLoop = window.setInterval(beamGPS, 666) 
-        gDebugLoop = window.setInterval(function() { debug ('<3') }, 10000)
     },
 
     bindEvents: function() {
