@@ -45,6 +45,7 @@ function callSession(kind, payload, ok1, nok1) {
      'POST',
      function(x) {
        debug({ok: x})
+       setToken(x.token)
        if (ok1)
          ok1(x)
        else
@@ -216,7 +217,6 @@ var beamGPS = function() {
 var setupLoginButton = function() {
   var ok1 = function(x) {
     debug('Login success')
-    setToken(x.token)
     showApp()
   }
   var nok1 = function() {
